@@ -12,7 +12,7 @@ Este projeto é uma API desenvolvida em Go. Abaixo estão as instruções para c
 1. **Clone o repositório:**
 
     ```bash
-    git clone https://github.com/IntegradorUFFS/back
+    git clone https://github.com/ImaKrp/golang-api.git
     cd golang-api
     ```
 

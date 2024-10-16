@@ -13,7 +13,7 @@ import (
 
 const autocompleteLocationByLikeName = `-- name: AutocompleteLocationByLikeName :many
 SELECT id, name FROM location
-WHERE name ~* $1 ORDER BY name ASC LIMIT 10
+WHERE name ~* $1 ORDER BY name LIMIT 10
 `
 
 func (q *Queries) AutocompleteLocationByLikeName(ctx context.Context, name string) ([]Location, error) {

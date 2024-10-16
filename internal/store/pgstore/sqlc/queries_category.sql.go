@@ -13,7 +13,7 @@ import (
 
 const autocompleteCategoryByLikeName = `-- name: AutocompleteCategoryByLikeName :many
 SELECT id, name FROM category
-WHERE name ~* $1 ORDER BY name ASC LIMIT 10
+WHERE name ~* $1 ORDER BY name LIMIT 10
 `
 
 func (q *Queries) AutocompleteCategoryByLikeName(ctx context.Context, name string) ([]Category, error) {

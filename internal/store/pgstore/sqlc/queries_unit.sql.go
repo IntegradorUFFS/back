@@ -14,7 +14,7 @@ import (
 
 const autocompleteUnitByLikeName = `-- name: AutocompleteUnitByLikeName :many
 SELECT id, name, short_name FROM unit
-WHERE name ~* $1 ORDER BY name ASC LIMIT 10
+WHERE name ~* $1 ORDER BY name LIMIT 10
 `
 
 func (q *Queries) AutocompleteUnitByLikeName(ctx context.Context, name string) ([]Unit, error) {

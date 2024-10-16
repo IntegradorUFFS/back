@@ -4,7 +4,8 @@ WHERE id = $1 LIMIT 1;
 
 -- name: AutocompleteUnitByLikeName :many
 SELECT id, name, short_name FROM unit
-WHERE name ~* $1 ORDER BY name ASC LIMIT 10;
+WHERE name ~* $1 ORDER BY name LIMIT 10;
+
 
 -- name: FetchPaginatedUnits :many
 SELECT id, name, short_name FROM unit

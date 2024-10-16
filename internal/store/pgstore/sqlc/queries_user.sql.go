@@ -109,7 +109,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 const fetchPaginatedUsers = `-- name: FetchPaginatedUsers :many
-SELECT id, email, first_name, last_name, role, created_at FROM users
+SELECT id, email, first_name, last_name, role FROM users
 ORDER BY first_name LIMIT $1 OFFSET $2
 `
 
@@ -124,7 +124,6 @@ type FetchPaginatedUsersRow struct {
 	FirstName string
 	LastName  pgtype.Text
 	Role      Userrole
-	CreatedAt pgtype.Timestamp
 }
 
 func (q *Queries) FetchPaginatedUsers(ctx context.Context, arg FetchPaginatedUsersParams) ([]FetchPaginatedUsersRow, error) {
@@ -142,7 +141,52 @@ func (q *Queries) FetchPaginatedUsers(ctx context.Context, arg FetchPaginatedUse
 			&i.FirstName,
 			&i.LastName,
 			&i.Role,
-			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const fetchPaginatedUsersByRole = `-- name: FetchPaginatedUsersByRole :many
+SELECT id, email, first_name, last_name, role FROM users
+WHERE role = $3
+ORDER BY first_name LIMIT $1 OFFSET $2
+`
+
+type FetchPaginatedUsersByRoleParams struct {
+	Limit  int32
+	Offset int32
+	Role   Userrole
+}
+
+type FetchPaginatedUsersByRoleRow struct {
+	ID        uuid.UUID
+	Email     string
+	FirstName string
+	LastName  pgtype.Text
+	Role      Userrole
+}
+
+func (q *Queries) FetchPaginatedUsersByRole(ctx context.Context, arg FetchPaginatedUsersByRoleParams) ([]FetchPaginatedUsersByRoleRow, error) {
+	rows, err := q.db.Query(ctx, fetchPaginatedUsersByRole, arg.Limit, arg.Offset, arg.Role)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FetchPaginatedUsersByRoleRow
+	for rows.Next() {
+		var i FetchPaginatedUsersByRoleRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.FirstName,
+			&i.LastName,
+			&i.Role,
 		); err != nil {
 			return nil, err
 		}
