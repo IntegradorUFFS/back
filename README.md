@@ -12,8 +12,8 @@ Este projeto é uma API desenvolvida em Go. Abaixo estão as instruções para c
 1. **Clone o repositório:**
 
     ```bash
-    git clone https://github.com/ImaKrp/golang-api.git
-    cd golang-api
+    git clone https://github.com/IntegradorUFFS/back
+    cd back
     ```
 
 2. **Instale as dependências:**
