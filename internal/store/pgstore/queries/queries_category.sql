@@ -4,7 +4,7 @@ WHERE id = $1 LIMIT 1;
 
 -- name: AutocompleteCategoryByLikeName :many
 SELECT id, name FROM category
-WHERE name ~* $1 ORDER BY name LIMIT 10;
+WHERE name ~* $1 ORDER BY name ASC LIMIT 10;
 
 -- name: FetchPaginatedCategories :many
 SELECT id, name FROM category

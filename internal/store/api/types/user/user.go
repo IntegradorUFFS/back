@@ -10,15 +10,32 @@ type T_responseBody struct {
 	Role      string `json:"role"`
 }
 
+type T_responseBodyWithCreatedAt struct {
+	Email     string `json:"email"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	ID        string `json:"id"`
+	Role      string `json:"role"`
+	CreatedAt string `json:"created_at"`
+}
+
 type T_responseWithMessage struct {
 	Data    T_responseBody `json:"data"`
 	Message string         `json:"message"`
 }
 
-type T_responseWithMessageNToken struct {
-	Data    T_responseBody `json:"data"`
-	Message string         `json:"message"`
+type T_responseBodyNTOken struct {
+	Email     string `json:"email"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	ID        string `json:"id"`
+	Role      string `json:"role"`
 	Token   string         `json:"token"`
+}
+
+type T_responseWithMessageNToken struct {
+	Data    T_responseBodyNTOken `json:"data"`
+	Message string         `json:"message"`
 }
 
 type T_response struct {
@@ -62,6 +79,12 @@ type T_responseMeta struct {
 }
 
 type T_readQuery struct {
-	Page    int32
-	PerPage int32
+	Page            int32
+	PerPage         int32
+	SortColumn      string
+	SortDirection   string
+	FilterFirstName string
+	FilterLastName  string
+	FilterEmail     string
+	FilterRole      string
 }

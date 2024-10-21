@@ -13,11 +13,43 @@ import (
 
 const autocompleteLocationByLikeName = `-- name: AutocompleteLocationByLikeName :many
 SELECT id, name FROM location
-WHERE name ~* $1 ORDER BY name LIMIT 10
+WHERE name ~* $1 ORDER BY name ASC LIMIT 10
 `
 
 func (q *Queries) AutocompleteLocationByLikeName(ctx context.Context, name string) ([]Location, error) {
 	rows, err := q.db.Query(ctx, autocompleteLocationByLikeName, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Location
+	for rows.Next() {
+		var i Location
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const autocompleteLocationByLikeNameWithMaterial = `-- name: AutocompleteLocationByLikeNameWithMaterial :many
+SELECT location.id, location.name FROM location
+LEFT JOIN location_material ON location_material.location_id=location.id
+WHERE location_material.material_id = $1 AND
+name ~* $2 ORDER BY name ASC LIMIT 10
+`
+
+type AutocompleteLocationByLikeNameWithMaterialParams struct {
+	MaterialID uuid.UUID
+	Name       string
+}
+
+func (q *Queries) AutocompleteLocationByLikeNameWithMaterial(ctx context.Context, arg AutocompleteLocationByLikeNameWithMaterialParams) ([]Location, error) {
+	rows, err := q.db.Query(ctx, autocompleteLocationByLikeNameWithMaterial, arg.MaterialID, arg.Name)
 	if err != nil {
 		return nil, err
 	}

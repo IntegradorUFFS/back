@@ -20,12 +20,37 @@ func Read(w http.ResponseWriter, r *http.Request, p unitTypes.T_params, url_q un
 	offset := url_q.Page * url_q.PerPage
 	limit := url_q.PerPage
 
+	filter := ""
+
 	type _response struct {
 		Data []unitTypes.T_responseBody `json:"data"`
 		Meta unitTypes.T_responseMeta   `json:"meta"`
 	}
 
-	units, err := q.FetchPaginatedUnits(r.Context(), pgstore.FetchPaginatedUnitsParams{
+	is_first_field := true
+
+	if url_q.FilterName != "" {
+		if is_first_field {
+			filter += " WHERE"
+		} else {
+			filter += " AND"
+		}
+		filter += " name ~* '" + url_q.FilterName + "'"
+		is_first_field = false
+	}
+
+	if url_q.FilterShortName != "" {
+		if is_first_field {
+			filter += " WHERE"
+		} else {
+			filter += " AND"
+		}
+		filter += " short_name ~* '" + url_q.FilterShortName + "'"
+		is_first_field = false
+	}
+
+	units, err := q.C_FetchPaginatedUnits(r.Context(), "SELECT id, name, short_name FROM unit"+filter+
+		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $1 OFFSET $2", pgstore.FetchPaginatedUnitsParams{
 		Limit:  limit,
 		Offset: offset,
 	})
@@ -35,7 +60,7 @@ func Read(w http.ResponseWriter, r *http.Request, p unitTypes.T_params, url_q un
 		return
 	}
 
-	size, err := q.GetUnitTableSize(r.Context())
+	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM unit`+filter)
 
 	if err != nil {
 		helper.HandleError(w, "", "Something went wrong", http.StatusInternalServerError)

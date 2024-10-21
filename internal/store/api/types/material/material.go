@@ -36,6 +36,19 @@ type T_responseBody struct {
 	Unit        unitTypes.T_responseBody     `json:"unit"`
 }
 
+type T_responseCleanBody struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Quantity    float32 `json:"quantity"`
+}
+
+type T_autocompleteResponseBody struct {
+	ID   string                   `json:"id"`
+	Name string                   `json:"name"`
+	Unit unitTypes.T_responseBody `json:"unit"`
+}
+
 type T_responseWithMessage struct {
 	Data    T_responseBody `json:"data"`
 	Message string         `json:"message"`
@@ -60,10 +73,10 @@ type T_meta struct {
 }
 
 type T_responseMeta struct {
-	Page       int64 `json:"page"`
-	PerPage    int64 `json:"per_page"`
-	Total      int64 `json:"total"`
-	TotalPages int64 `json:"total_pages"`
+	Page       int32 `json:"page"`
+	PerPage    int32 `json:"per_page"`
+	Total      int32 `json:"total"`
+	TotalPages int32 `json:"total_pages"`
 }
 
 type T_autocompleteQuery struct {
@@ -72,6 +85,11 @@ type T_autocompleteQuery struct {
 }
 
 type T_readQuery struct {
-	Page    int32
-	PerPage int32
+	Page             int32
+	PerPage          int32
+	SortColumn       string
+	SortDirection    string
+	FilterName       string
+	FilterCategoryID string
+	FilterUnitID     string
 }

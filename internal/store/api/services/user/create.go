@@ -40,13 +40,7 @@ func Create(w http.ResponseWriter, r *http.Request, p userTypes.T_params, b user
 			Role:      pgstore.Userrole(b.Role),
 		})
 
-		user = pgstore.CreateUserRow{
-			ID:        user_r.ID,
-			Email:     user_r.Email,
-			FirstName: user_r.FirstName,
-			LastName:  user_r.LastName,
-			Role:      user_r.Role,
-		}
+		user = pgstore.CreateUserRow(user_r)
 		err = err_r
 
 	} else {
@@ -74,7 +68,8 @@ func Create(w http.ResponseWriter, r *http.Request, p userTypes.T_params, b user
 			Email:     user.Email,
 			FirstName: user.FirstName,
 			LastName:  user.LastName.String,
-			ID:        user.ID.String(), Role: string(user.Role),
+			ID:        user.ID.String(),
+			Role:      string(user.Role),
 		},
 		Message: "Successfully created",
 	})

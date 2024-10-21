@@ -15,12 +15,7 @@ SELECT id, email, first_name, last_name, role FROM users
 ORDER BY first_name;
 
 -- name: FetchPaginatedUsers :many
-SELECT id, email, first_name, last_name, role FROM users
-ORDER BY first_name LIMIT $1 OFFSET $2;
-
--- name: FetchPaginatedUsersByRole :many
-SELECT id, email, first_name, last_name, role FROM users
-WHERE role = $3
+SELECT id, email, first_name, last_name, role, created_at FROM users
 ORDER BY first_name LIMIT $1 OFFSET $2;
 
 -- name: GetUserTableSize :one

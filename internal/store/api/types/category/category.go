@@ -53,6 +53,9 @@ type T_autocompleteQuery struct {
 }
 
 type T_readQuery struct {
-	Page    int32
-	PerPage int32
+	Page          int32
+	PerPage       int32
+	SortColumn    string
+	SortDirection string
+	FilterName    string
 }

@@ -32,7 +32,7 @@ func (u UnitQuery) Create(w http.ResponseWriter, r *http.Request) {
 	parsed_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (u UnitQuery) Update(w http.ResponseWriter, r *http.Request) {
 	parsed_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -98,7 +98,7 @@ func (u UnitQuery) Update(w http.ResponseWriter, r *http.Request) {
 	parsed_target_id, err := uuid.Parse(id)
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -127,14 +127,14 @@ func (u UnitQuery) Delete(w http.ResponseWriter, r *http.Request) {
 	parsed_requester_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
 	parsed_target_id, err := uuid.Parse(id)
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -163,14 +163,14 @@ func (u UnitQuery) Find(w http.ResponseWriter, r *http.Request) {
 	parsed_requester_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
 	parsed_target_id, err := uuid.Parse(id)
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -184,12 +184,18 @@ func (u UnitQuery) Find(w http.ResponseWriter, r *http.Request) {
 func (u UnitQuery) List(w http.ResponseWriter, r *http.Request) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
 	url_query := unitTypes.T_readQuery{
-		Page:    0,
-		PerPage: 10,
+		Page:          0,
+		PerPage:       10,
+		SortColumn:    "name",
+		SortDirection: "ASC",
 	}
 
 	q_page := r.URL.Query().Get("page")
 	q_per_page := r.URL.Query().Get("per_page")
+	q_sort_column := r.URL.Query().Get("sort_column")
+	q_sort_direction := r.URL.Query().Get("sort_direction")
+	q_filter_name := r.URL.Query().Get("filter[name]")
+	q_filter_short_name := r.URL.Query().Get("filter[short_name]")
 
 	if claims["role"] == "viewer" || claims["id"] == "" {
 		helper.HandleError(w, "", "Unauthorized user", http.StatusUnauthorized)
@@ -199,8 +205,24 @@ func (u UnitQuery) List(w http.ResponseWriter, r *http.Request) {
 	parsed_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
+	}
+
+	if strings.ToLower(q_sort_direction) == "desc" {
+		url_query.SortDirection = "DESC"
+	}
+
+	if q_sort_column == "id" || q_sort_column == "short_name" {
+		url_query.SortColumn = q_sort_column
+	}
+
+	if len(strings.TrimSpace(q_filter_name)) != 0 {
+		url_query.FilterName = q_filter_name
+	}
+
+	if len(strings.TrimSpace(q_filter_short_name)) != 0 {
+		url_query.FilterShortName = q_filter_short_name
 	}
 
 	if q_page != "" && len(strings.TrimSpace(q_page)) > 0 {
@@ -230,7 +252,7 @@ func (u UnitQuery) Autocomplete(w http.ResponseWriter, r *http.Request) {
 	q_search := r.URL.Query().Get("s")
 	q_id := r.URL.Query().Get("id")
 
-	if claims["role"] == "viewer" || claims["id"] == "" {
+	if claims["id"] == "" {
 		helper.HandleError(w, "", "Unauthorized user", http.StatusUnauthorized)
 		return
 	}
@@ -238,7 +260,7 @@ func (u UnitQuery) Autocomplete(w http.ResponseWriter, r *http.Request) {
 	parsed_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 

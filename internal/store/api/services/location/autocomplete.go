@@ -53,8 +53,16 @@ func Autocomplete(w http.ResponseWriter, r *http.Request, p locationTypes.T_para
 		return
 	}
 
-	categories, err := q.AutocompleteLocationByLikeName(r.Context(), url_q.Search)
+	var categories []pgstore.Location
 
+	if url_q.FilterMaterialID != uuid.Nil {
+		categories, err = q.AutocompleteLocationByLikeNameWithMaterial(r.Context(), pgstore.AutocompleteLocationByLikeNameWithMaterialParams{
+			MaterialID: url_q.FilterMaterialID,
+			Name:       url_q.Search,
+		})
+	} else {
+		categories, err = q.AutocompleteLocationByLikeName(r.Context(), url_q.Search)
+	}
 	if err != nil {
 		helper.HandleErrorMessage(w, err, "Location")
 		return

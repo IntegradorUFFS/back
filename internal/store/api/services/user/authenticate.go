@@ -17,14 +17,14 @@ func Authenticate(w http.ResponseWriter, r *http.Request, b userTypes.T_body, q 
 	user, err := q.FindUserByEmail(r.Context(), b.Email)
 
 	if err != nil {
-		helper.HandleErrorMessage(w, err, "User")
+		helper.HandleError(w, "email", "Email not registered", http.StatusNotFound)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(b.Password))
 
 	if err != nil {
-		helper.HandleError(w, "password", "Wrong password", http.StatusInternalServerError)
+		helper.HandleError(w, "password", "Wrong password", http.StatusBadRequest)
 		return
 	}
 
@@ -33,11 +33,8 @@ func Authenticate(w http.ResponseWriter, r *http.Request, b userTypes.T_body, q 
 	tokenAuth := jwtauth.New("HS256", []byte(jwtSecret), nil)
 
 	_, tokenString, err := tokenAuth.Encode(map[string]interface{}{
-		"id":         user.ID.String(),
-		"email":      user.Email,
-		"first_name": user.FirstName,
-		"last_name":  user.LastName.String,
-		"role":       user.Role,
+		"id":   user.ID.String(),
+		"role": user.Role,
 	})
 
 	if err != nil {
@@ -46,12 +43,13 @@ func Authenticate(w http.ResponseWriter, r *http.Request, b userTypes.T_body, q 
 	}
 
 	data, _ := json.Marshal(userTypes.T_responseWithMessageNToken{
-		Token: tokenString,
-		Data: userTypes.T_responseBody{
+		Data: userTypes.T_responseBodyNTOken{
 			Email:     user.Email,
 			FirstName: user.FirstName,
 			LastName:  user.LastName.String,
-			ID:        user.ID.String(), Role: string(user.Role),
+			ID:        user.ID.String(),
+			Role:      string(user.Role),
+			Token:     tokenString,
 		},
 		Message: "Successfully authenticated",
 	})

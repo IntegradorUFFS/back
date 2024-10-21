@@ -3,9 +3,12 @@ package api
 import (
 	categoryController "back/internal/store/api/controllers/category"
 	locationController "back/internal/store/api/controllers/location"
+	locationMaterialController "back/internal/store/api/controllers/location_material"
 	materialController "back/internal/store/api/controllers/material"
+	transactionController "back/internal/store/api/controllers/transaction"
 	unitController "back/internal/store/api/controllers/unit"
 	userController "back/internal/store/api/controllers/user"
+	"back/internal/store/api/helper"
 	pgstore "back/internal/store/pgstore/sqlc"
 	"net/http"
 	"os"
@@ -14,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/jwtauth/v5"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 type apiHandler struct {
@@ -23,6 +27,29 @@ type apiHandler struct {
 
 func (h apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.r.ServeHTTP(w, r)
+}
+
+func Authenticator(ja *jwtauth.JWTAuth) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		hfn := func(w http.ResponseWriter, r *http.Request) {
+			token, _, err := jwtauth.FromContext(r.Context())
+
+			if err != nil {
+				helper.HandleError(w, "", err.Error(), http.StatusUnauthorized)
+				return
+			}
+
+			options := ja.ValidateOptions()
+
+			if token == nil || jwt.Validate(token, options...) != nil {
+				helper.HandleError(w, "", http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(hfn)
+	}
 }
 
 func NewHandler(q *pgstore.Queries) http.Handler {
@@ -48,7 +75,9 @@ func NewHandler(q *pgstore.Queries) http.Handler {
 		r.Route("/admin", func(r chi.Router) {
 			jwtSecret := os.Getenv("JWT_SECRET")
 			tokenAuth := jwtauth.New("HS256", []byte(jwtSecret), nil)
-			r.Use(jwtauth.Verifier(tokenAuth), jwtauth.Authenticator(tokenAuth))
+			r.Use(jwtauth.Verifier(tokenAuth), Authenticator(tokenAuth))
+
+			r.Get("/refresh", userController.New(q).Refresh)
 
 			r.Route("/user", func(r chi.Router) {
 				r.Post("/", userController.New(q).Create)
@@ -87,11 +116,23 @@ func NewHandler(q *pgstore.Queries) http.Handler {
 
 			r.Route("/material", func(r chi.Router) {
 				r.Post("/", materialController.New(q).Create)
-				// r.Delete("/{id}", materialController.New(q).Delete)
-				// r.Put("/{id}", materialController.New(q).Update)
-				// r.Get("/list", materialController.New(q).List)
-				// r.Get("/{id}", materialController.New(q).Find)
-				// r.Get("/autocomplete", materialController.New(q).Autocomplete)
+				r.Delete("/{id}", materialController.New(q).Delete)
+				r.Put("/{id}", materialController.New(q).Update)
+				r.Get("/list", materialController.New(q).List)
+				r.Get("/{id}", materialController.New(q).Find)
+				r.Get("/autocomplete", materialController.New(q).Autocomplete)
+			})
+
+			r.Route("/location-material", func(r chi.Router) {
+				r.Get("/list", locationMaterialController.New(q).List)
+				r.Get("/{id}", locationMaterialController.New(q).Find)
+				r.Get("/relation", locationMaterialController.New(q).FindRelation)
+			})
+
+			r.Route("/transaction", func(r chi.Router) {
+				r.Post("/", transactionController.New(q).Create)
+				r.Get("/list", transactionController.New(q).List)
+				r.Get("/{id}", transactionController.New(q).Find)
 			})
 		})
 	})

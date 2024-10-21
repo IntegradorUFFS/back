@@ -7,6 +7,7 @@ import (
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -34,7 +35,7 @@ func (u UserQuery) Create(w http.ResponseWriter, r *http.Request) {
 	parsed_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -170,14 +171,14 @@ func (u UserQuery) Delete(w http.ResponseWriter, r *http.Request) {
 	parsed_requester_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
 	parsed_target_id, err := uuid.Parse(id)
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -206,14 +207,14 @@ func (u UserQuery) Find(w http.ResponseWriter, r *http.Request) {
 	parsed_requester_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
 	parsed_id, err := uuid.Parse(id)
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -227,12 +228,20 @@ func (u UserQuery) Find(w http.ResponseWriter, r *http.Request) {
 func (u UserQuery) List(w http.ResponseWriter, r *http.Request) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
 	url_query := userTypes.T_readQuery{
-		Page:    0,
-		PerPage: 10,
+		Page:          0,
+		PerPage:       10,
+		SortColumn:    "first_name",
+		SortDirection: "ASC",
 	}
 
 	q_page := r.URL.Query().Get("page")
 	q_per_page := r.URL.Query().Get("per_page")
+	q_sort_column := r.URL.Query().Get("sort_column")
+	q_sort_direction := r.URL.Query().Get("sort_direction")
+	q_filter_first_name := r.URL.Query().Get("filter[first_name]")
+	q_filter_last_name := r.URL.Query().Get("filter[last_name]")
+	q_filter_role := r.URL.Query().Get("filter[role]")
+	q_filter_email := r.URL.Query().Get("filter[email]")
 
 	if claims["role"] == "viewer" || claims["id"] == "" {
 		helper.HandleError(w, "", "Unauthorized user", http.StatusUnauthorized)
@@ -242,8 +251,34 @@ func (u UserQuery) List(w http.ResponseWriter, r *http.Request) {
 	parsed_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
+	}
+
+	if strings.ToLower(q_sort_direction) == "desc" {
+		url_query.SortDirection = "DESC"
+	}
+
+	possible_fields := []string{"id", "last_name", "email", "role"}
+
+	if slices.Contains(possible_fields, q_sort_column) {
+		url_query.SortColumn = q_sort_column
+	}
+
+	if len(strings.TrimSpace(q_filter_first_name)) != 0 {
+		url_query.FilterFirstName = q_filter_first_name
+	}
+
+	if len(strings.TrimSpace(q_filter_last_name)) != 0 {
+		url_query.FilterLastName = q_filter_last_name
+	}
+
+	if len(strings.TrimSpace(q_filter_email)) != 0 {
+		url_query.FilterEmail = q_filter_email
+	}
+
+	if len(strings.TrimSpace(q_filter_role)) != 0 {
+		url_query.FilterRole = q_filter_role
 	}
 
 	if q_page != "" && len(strings.TrimSpace(q_page)) > 0 {
@@ -285,7 +320,7 @@ func (u UserQuery) Update(w http.ResponseWriter, r *http.Request) {
 	parsed_requester_id, err := uuid.Parse(claims["id"].(string))
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -319,7 +354,7 @@ func (u UserQuery) Update(w http.ResponseWriter, r *http.Request) {
 	parsed_id, err := uuid.Parse(id)
 
 	if err != nil {
-		helper.HandleError(w, "", "Invalid uuid", http.StatusInternalServerError)
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -381,6 +416,22 @@ func (u UserQuery) Update(w http.ResponseWriter, r *http.Request) {
 		RequesterRole: claims["role"].(string),
 		RequesterID:   parsed_requester_id,
 	}, target_user, u.q)
+}
+
+func (u UserQuery) Refresh(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+
+	parsed_requester_id, err := uuid.Parse(claims["id"].(string))
+
+	if err != nil {
+		helper.HandleError(w, "", "Invalid uuid", http.StatusUnprocessableEntity)
+		return
+	}
+
+	userServices.Refresh(w, r, userTypes.T_params{
+		RequesterRole: claims["role"].(string),
+		RequesterID:   parsed_requester_id,
+	}, u.q)
 }
 
 func New(q *pgstore.Queries) UserQuery {

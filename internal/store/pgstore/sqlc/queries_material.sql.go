@@ -12,6 +12,37 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const autocompleteMaterialByLikeName = `-- name: AutocompleteMaterialByLikeName :many
+SELECT id, name, unit_id FROM material
+WHERE name ~* $1 ORDER BY name ASC LIMIT 10
+`
+
+type AutocompleteMaterialByLikeNameRow struct {
+	ID     uuid.UUID
+	Name   string
+	UnitID uuid.UUID
+}
+
+func (q *Queries) AutocompleteMaterialByLikeName(ctx context.Context, name string) ([]AutocompleteMaterialByLikeNameRow, error) {
+	rows, err := q.db.Query(ctx, autocompleteMaterialByLikeName, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AutocompleteMaterialByLikeNameRow
+	for rows.Next() {
+		var i AutocompleteMaterialByLikeNameRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.UnitID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createMaterial = `-- name: CreateMaterial :one
 INSERT INTO material (
   name, description, category_id, unit_id

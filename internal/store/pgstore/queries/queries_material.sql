@@ -6,6 +6,10 @@ WHERE id = $1 LIMIT 1;
 SELECT id, name, description, quantity, category_id, unit_id FROM material
 ORDER BY name;
 
+-- name: AutocompleteMaterialByLikeName :many
+SELECT id, name, unit_id FROM material
+WHERE name ~* $1 ORDER BY name ASC LIMIT 10;
+
 -- name: FetchPaginatedMaterials :many
 SELECT id, name, description, quantity, category_id, unit_id FROM material
 ORDER BY name LIMIT $1 OFFSET $2;

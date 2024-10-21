@@ -76,10 +76,5 @@ func HandleErrorMessage(w http.ResponseWriter, err error, origin string) {
 		return
 	}
 
-	// if errors.Is(err, pgx.ERR) {
-	// 	HandleError(w, "", origin+" not registered", http.StatusNotFound)
-	// 	return
-	// }
-
 	HandleError(w, "", "Something went wrong", http.StatusInternalServerError)
 }

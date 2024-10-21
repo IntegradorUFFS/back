@@ -7,15 +7,10 @@ import (
 	unitTypes "back/internal/store/api/types/unit"
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
-	"errors"
 	"net/http"
-
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func Create(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b materialTypes.T_body, q *pgstore.Queries) {
+func Find(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, q *pgstore.Queries) {
 
 	requester_user, err := q.FindUserById(r.Context(), p.RequesterID)
 
@@ -24,42 +19,31 @@ func Create(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b 
 		return
 	}
 
-	category, err := q.FindCategoryById(r.Context(), b.CategoryID)
+	material, err := q.FindMaterialById(r.Context(), p.ID)
+
+	if err != nil {
+		helper.HandleErrorMessage(w, err, "Material")
+		return
+	}
+
+	category, err := q.FindCategoryById(r.Context(), material.CategoryID)
 
 	if err != nil {
 		helper.HandleErrorMessage(w, err, "Category")
 		return
 	}
 
-	unit, err := q.FindUnitById(r.Context(), b.UnitID)
+	unit, err := q.FindUnitById(r.Context(), material.UnitID)
 
 	if err != nil {
 		helper.HandleErrorMessage(w, err, "Unit")
 		return
 	}
 
-	material, err := q.CreateMaterial(r.Context(), pgstore.CreateMaterialParams{
-		Name:        b.Name,
-		Description: pgtype.Text{String: b.Description, Valid: true},
-		CategoryID:  b.CategoryID,
-		UnitID:      b.UnitID,
-	})
-
-	if err != nil {
-		var e *pgconn.PgError
-		if errors.As(err, &e) && e.Code == pgerrcode.UniqueViolation {
-			helper.HandleError(w, "name", "already registered", http.StatusBadRequest)
-		} else {
-			helper.HandleError(w, "", "Something went wrong", http.StatusInternalServerError)
-		}
-
-		return
-	}
-
-	data, _ := json.Marshal(materialTypes.T_responseWithMessage{
+	data, _ := json.Marshal(materialTypes.T_response{
 		Data: materialTypes.T_responseBody{
-			ID:          material.ID.String(),
 			Name:        material.Name,
+			ID:          material.ID.String(),
 			Description: material.Description.String,
 			Quantity:    material.Quantity,
 			Category: categoryTypes.T_responseBody{
@@ -72,7 +56,6 @@ func Create(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b 
 				ShortName: unit.ShortName.String,
 			},
 		},
-		Message: "Successfully created",
 	})
 
 	w.Header().Set("Content-Type", "application/json")

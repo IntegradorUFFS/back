@@ -19,13 +19,27 @@ func Read(w http.ResponseWriter, r *http.Request, p categoryTypes.T_params, url_
 
 	offset := url_q.Page * url_q.PerPage
 	limit := url_q.PerPage
+	filter := ""
 
 	type _response struct {
 		Data []categoryTypes.T_responseBody `json:"data"`
 		Meta categoryTypes.T_responseMeta   `json:"meta"`
 	}
 
-	categories, err := q.FetchPaginatedCategories(r.Context(), pgstore.FetchPaginatedCategoriesParams{
+	is_first_field := true
+
+	if url_q.FilterName != "" {
+		if is_first_field {
+			filter += " WHERE"
+		} else {
+			filter += " AND"
+		}
+		filter += " name ~* '" + url_q.FilterName + "'"
+		is_first_field = false
+	}
+
+	categories, err := q.C_FetchPaginatedCategories(r.Context(), "SELECT id, name FROM category"+filter+
+		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $1 OFFSET $2", pgstore.FetchPaginatedCategoriesParams{
 		Limit:  limit,
 		Offset: offset,
 	})
@@ -35,7 +49,7 @@ func Read(w http.ResponseWriter, r *http.Request, p categoryTypes.T_params, url_
 		return
 	}
 
-	size, err := q.GetCategoryTableSize(r.Context())
+	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM category`+filter)
 
 	if err != nil {
 		helper.HandleError(w, "", "Something went wrong", http.StatusInternalServerError)

@@ -1,8 +1,6 @@
 package unitTypes
 
 import (
-	"net/url"
-
 	"github.com/google/uuid"
 )
 
@@ -59,7 +57,10 @@ type T_autocompleteQuery struct {
 }
 
 type T_readQuery struct {
-	Page    int32
-	PerPage int32
-	Query   url.Values
+	Page            int32
+	PerPage         int32
+	SortColumn      string
+	SortDirection   string
+	FilterName      string
+	FilterShortName string
 }
