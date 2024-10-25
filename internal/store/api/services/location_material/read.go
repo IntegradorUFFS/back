@@ -9,6 +9,7 @@ import (
 	unitTypes "back/internal/store/api/types/unit"
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 )
@@ -31,43 +32,51 @@ func Read(w http.ResponseWriter, r *http.Request, p locationMaterialTypes.T_para
 		Meta locationMaterialTypes.T_responseMeta   `json:"meta"`
 	}
 
-	is_first_field := true
+	filter_count := 1
+
+	var filters_arr []any
 
 	if url_q.FilterLocationID != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " location_id = '" + url_q.FilterLocationID + "'"
-		is_first_field = false
+		filter += " location_id = $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterLocationID)
 	}
 
 	if url_q.FilterMaterialID != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " material_id = '" + url_q.FilterMaterialID + "'"
-		is_first_field = false
+		filter += " material_id = $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterMaterialID)
 	}
+
+	size_filters := filters_arr
+
+	filters_arr = append(filters_arr, limit)
+	filters_arr = append(filters_arr, offset)
 
 	location_materials, err := q.C_FetchPaginatedLocationMaterials(r.Context(), `SELECT location_material.*
 		FROM location_material
 		LEFT JOIN material ON location_material.material_id=material.id
 		LEFT JOIN location ON location_material.location_id=location.id`+filter+
-		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $1 OFFSET $2", pgstore.FetchPaginatedLocationMaterialsParams{
-		Limit:  limit,
-		Offset: offset,
-	})
+		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $" + fmt.Sprint(filter_count) + " OFFSET $" + fmt.Sprint(filter_count + 1), filters_arr)
 
 	if err != nil {
 		helper.HandleErrorMessage(w, err, "None material")
 		return
 	}
 
-	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM location_material`+filter)
+	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM location_material`+filter, size_filters)
 
 	if err != nil {
 		helper.HandleError(w, "", "Something went wrong", http.StatusInternalServerError)

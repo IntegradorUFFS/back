@@ -134,6 +134,11 @@ func Create(w http.ResponseWriter, r *http.Request, p transactionTypes.T_params,
 			Quantity: material.Quantity + quantity,
 		})
 
+		if err != nil {
+			helper.HandleError(w, "", "Something went wrong", http.StatusInternalServerError)
+			return
+		}
+
 		material.Quantity += quantity
 	}
 

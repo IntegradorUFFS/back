@@ -8,6 +8,7 @@ import (
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -26,23 +27,25 @@ func Update(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b 
 
 	update_query := `UPDATE material set `
 
-	query_end := ` WHERE id = $1 RETURNING name, description, quantity, category_id, unit_id`
+	update_count := 1
 
-	is_first_field := true
+	var updates_arr []any
 
 	if b.Name != "" {
-		if !is_first_field {
+		if update_count == 1 {
 			update_query = update_query + `, `
 		}
-		update_query = update_query + `name = '` + b.Name + `'`
-		is_first_field = false
+		update_query = update_query + `name = $` + fmt.Sprint(update_count)
+		updates_arr = append(updates_arr, b.Name)
+		update_count += 1
 	}
 	if b.Description != "" {
-		if !is_first_field {
+		if update_count == 1 {
 			update_query = update_query + `, `
 		}
-		update_query = update_query + `description = '` + b.Description + `'`
-		is_first_field = false
+		update_query = update_query + `description = $` + fmt.Sprint(update_count)
+		updates_arr = append(updates_arr, b.Description)
+		update_count += 1
 	}
 	if b.CategoryID != uuid.Nil {
 		_, err := q.FindCategoryById(r.Context(), b.CategoryID)
@@ -50,11 +53,12 @@ func Update(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b 
 			helper.HandleErrorMessage(w, err, "Category")
 			return
 		} else {
-			if !is_first_field {
+			if update_count == 1 {
 				update_query = update_query + `, `
 			}
-			update_query = update_query + `category_id = '` + b.CategoryID.String() + `'`
-			is_first_field = false
+			update_query = update_query + `category_id = $` + fmt.Sprint(update_count)
+			updates_arr = append(updates_arr, b.CategoryID.String())
+			update_count += 1
 		}
 	}
 	if b.UnitID != uuid.Nil {
@@ -63,17 +67,18 @@ func Update(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b 
 			helper.HandleErrorMessage(w, err, "Unit")
 			return
 		} else {
-			if !is_first_field {
+			if update_count == 1 {
 				update_query = update_query + `, `
 			}
-			update_query = update_query + `unit_id = '` + b.UnitID.String() + `'`
-			is_first_field = false
+			update_query = update_query + `unit_id = $` + fmt.Sprint(update_count)
+			updates_arr = append(updates_arr, b.UnitID.String())
+			update_count += 1
 		}
 	}
 
-	material, err := q.C_UpdateMaterial(r.Context(), update_query+query_end, pgstore.UpdateMaterialParams{
-		ID: p.ID,
-	})
+	updates_arr = append(updates_arr, p.ID)
+
+	material, err := q.C_UpdateMaterial(r.Context(), update_query+` WHERE id = $`+fmt.Sprint(update_count)+` RETURNING name, description, quantity, category_id, unit_id`, updates_arr)
 
 	if err != nil {
 		var e *pgconn.PgError

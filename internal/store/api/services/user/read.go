@@ -5,6 +5,7 @@ import (
 	userTypes "back/internal/store/api/types/user"
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"time"
@@ -27,70 +28,79 @@ func Read(w http.ResponseWriter, r *http.Request, p userTypes.T_params, url_q us
 		Meta userTypes.T_responseMeta                `json:"meta"`
 	}
 
-	is_first_field := true
+
+	filter_count := 1
+
+	var filters_arr []any
 
 	if url_q.FilterFirstName != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " first_name ~* '" + url_q.FilterFirstName + "'"
-		is_first_field = false
+		filter += " first_name ~* $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterFirstName)
 	}
 
 	if url_q.FilterLastName != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " last_name ~* '" + url_q.FilterLastName + "'"
-		is_first_field = false
+		filter += " last_name ~* $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterLastName)
 	}
 
 	if url_q.FilterEmail != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " email ~* '" + url_q.FilterEmail + "'"
-		is_first_field = false
+		filter += " email ~* $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterEmail)
 	}
 
 	if p.RequesterRole == "manager" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
 		filter += " role = 'viewer'"
-		is_first_field = false
 	} else if url_q.FilterRole != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
 		filter += " role = '" + url_q.FilterRole + "'"
-		is_first_field = false
 	}
+
+	size_filters := filters_arr
+
+	filters_arr = append(filters_arr, limit)
+	filters_arr = append(filters_arr, offset)
 
 	_users := []userTypes.T_responseBodyWithCreatedAt{}
 
 	users, err := q.C_FetchPaginatedUsers(r.Context(), "SELECT id, email, first_name, last_name, role, created_at FROM users"+filter+
-		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $1 OFFSET $2", pgstore.FetchPaginatedUsersParams{
-		Offset: offset,
-		Limit:  limit,
-	})
+		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $" + fmt.Sprint(filter_count) + " OFFSET $" + fmt.Sprint(filter_count + 1), filters_arr)
 
 	if err != nil {
 		helper.HandleErrorMessage(w, err, "None user")
 		return
 	}
 
-	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM users`+filter)
+	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM users`+filter,size_filters)
 
 	if err != nil {
 		helper.HandleError(w, "", "Something went wrong", http.StatusInternalServerError)

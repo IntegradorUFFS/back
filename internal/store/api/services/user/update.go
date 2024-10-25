@@ -6,6 +6,7 @@ import (
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/jackc/pgerrcode"
@@ -36,50 +37,59 @@ func Update(w http.ResponseWriter, r *http.Request, p userTypes.T_params, b user
 	update_query := `UPDATE users
 					  set `
 
-	query_end := ` WHERE id = $1
-				  RETURNING email, first_name, last_name, role`
+	update_count := 1
 
-	is_first_field := true
+	var updates_arr []any
+
+	if b.FirstName != "" {
+		if update_count == 1 {
+			update_query = update_query + `, `
+		}
+		update_query = update_query + `first_name = $` + fmt.Sprint(update_count)
+		updates_arr = append(updates_arr, b.FirstName)
+		update_count += 1
+	}
 
 	if b.Email != "" {
-		if !is_first_field {
+		if update_count == 1 {
 			update_query = update_query + `, `
 		}
-		update_query = update_query + `email = '` + b.Email + `'`
-		is_first_field = false
-	}
-	if b.FirstName != "" {
-		if !is_first_field {
-			update_query = update_query + `, `
-		}
-		update_query = update_query + `first_name = '` + b.FirstName + `'`
-		is_first_field = false
-	}
-	if b.LastName != "" {
-		if !is_first_field {
-			update_query = update_query + `, `
-		}
-		update_query = update_query + `last_name = '` + b.LastName + `'`
-		is_first_field = false
-	}
-	if b.Password != "" {
-		if !is_first_field {
-			update_query = update_query + `, `
-		}
-		update_query = update_query + `password = '` + b.Password + `'`
-		is_first_field = false
-	}
-	if b.Role != "" {
-		if !is_first_field {
-			update_query = update_query + `, `
-		}
-		update_query = update_query + `role = '` + b.Role + `'`
-		is_first_field = false
+		update_query = update_query + `email = $` + fmt.Sprint(update_count)
+		updates_arr = append(updates_arr, b.Email)
+		update_count += 1
 	}
 
-	user_r, err := q.C_UpdateUser(r.Context(), update_query+query_end, pgstore.UpdateUserParams{
-		ID: p.ID,
-	})
+	if b.LastName != "" {
+		if update_count == 1 {
+			update_query = update_query + `, `
+		}
+		update_query = update_query + `last_name = $` + fmt.Sprint(update_count)
+		updates_arr = append(updates_arr, b.LastName)
+		update_count += 1
+	}
+
+	if b.Password != "" {
+		if update_count == 1 {
+			update_query = update_query + `, `
+		}
+		update_query = update_query + `password = $` + fmt.Sprint(update_count)
+		updates_arr = append(updates_arr, b.Password)
+		update_count += 1
+	}
+
+	if b.Role != "" {
+		if update_count == 1 {
+			update_query = update_query + `, `
+		}
+		update_query = update_query + `role = $` + fmt.Sprint(update_count)
+		updates_arr = append(updates_arr, b.Role)
+		update_count += 1
+	}
+
+	updates_arr = append(updates_arr, p.ID)
+
+	user_r, err := q.C_UpdateUser(r.Context(), update_query+` WHERE id = $`+fmt.Sprint(update_count)+`
+	RETURNING email, first_name, last_name, role`, updates_arr)
 
 	if err != nil {
 		var e *pgconn.PgError

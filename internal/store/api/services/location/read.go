@@ -5,6 +5,7 @@ import (
 	locationTypes "back/internal/store/api/types/location"
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 )
@@ -26,30 +27,38 @@ func Read(w http.ResponseWriter, r *http.Request, p locationTypes.T_params, url_
 		Meta locationTypes.T_responseMeta   `json:"meta"`
 	}
 
-	is_first_field := true
+
+	filter_count := 1
+
+	var filters_arr []any
 
 	if url_q.FilterName != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " name ~* '" + url_q.FilterName + "'"
-		is_first_field = false
+		filter += " name ~* $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterName)
 	}
 
+	size_filters := filters_arr
+
+	filters_arr = append(filters_arr, limit)
+	filters_arr = append(filters_arr, offset)
+
+
 	categories, err := q.C_FetchPaginatedLocations(r.Context(), "SELECT id, name FROM location"+filter+
-		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $1 OFFSET $2", pgstore.FetchPaginatedLocationsParams{
-		Limit:  limit,
-		Offset: offset,
-	})
+		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $" + fmt.Sprint(filter_count) + " OFFSET $" + fmt.Sprint(filter_count + 1), filters_arr)
 
 	if err != nil {
 		helper.HandleErrorMessage(w, err, "None location")
 		return
 	}
 
-	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM location`+filter)
+	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM location`+filter, size_filters)
 
 	if err != nil {
 		helper.HandleError(w, "", "Something went wrong", http.StatusInternalServerError)

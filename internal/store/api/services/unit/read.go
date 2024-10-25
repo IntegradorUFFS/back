@@ -5,6 +5,7 @@ import (
 	unitTypes "back/internal/store/api/types/unit"
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 )
@@ -27,40 +28,48 @@ func Read(w http.ResponseWriter, r *http.Request, p unitTypes.T_params, url_q un
 		Meta unitTypes.T_responseMeta   `json:"meta"`
 	}
 
-	is_first_field := true
+	filter_count := 1
+
+	var filters_arr []any
 
 	if url_q.FilterName != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " name ~* '" + url_q.FilterName + "'"
-		is_first_field = false
+		filter += " name ~* $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterName)
 	}
 
 	if url_q.FilterShortName != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " short_name ~* '" + url_q.FilterShortName + "'"
-		is_first_field = false
+		filter += " short_name ~* $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterName)
 	}
 
+	size_filters := filters_arr
+
+	filters_arr = append(filters_arr, limit)
+	filters_arr = append(filters_arr, offset)
+
 	units, err := q.C_FetchPaginatedUnits(r.Context(), "SELECT id, name, short_name FROM unit"+filter+
-		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $1 OFFSET $2", pgstore.FetchPaginatedUnitsParams{
-		Limit:  limit,
-		Offset: offset,
-	})
+		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+" LIMIT $" + fmt.Sprint(filter_count) + " OFFSET $" + fmt.Sprint(filter_count + 1), filters_arr)
 
 	if err != nil {
 		helper.HandleErrorMessage(w, err, "None unit")
 		return
 	}
 
-	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM unit`+filter)
+	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM unit`+filter, size_filters)
 
 	if err != nil {
 		helper.HandleError(w, "", "Something went wrong", http.StatusInternalServerError)

@@ -2,8 +2,8 @@ package pgstore
 
 import "context"
 
-func (q *Queries) C_UpdateUser(ctx context.Context, query string, arg UpdateUserParams) (UpdateUserRow, error) {
-	row := q.db.QueryRow(ctx, query, arg.ID)
+func (q *Queries) C_UpdateUser(ctx context.Context, query string, arg []any) (UpdateUserRow, error) {
+	row := q.db.QueryRow(ctx, query, arg...)
 	var i UpdateUserRow
 	err := row.Scan(
 		&i.Email,
@@ -14,8 +14,8 @@ func (q *Queries) C_UpdateUser(ctx context.Context, query string, arg UpdateUser
 	return i, err
 }
 
-func (q *Queries) C_UpdateUnit(ctx context.Context, query string, arg UpdateUnitParams) (Unit, error) {
-	row := q.db.QueryRow(ctx, query, arg.ID)
+func (q *Queries) C_UpdateUnit(ctx context.Context, query string, arg []any) (Unit, error) {
+	row := q.db.QueryRow(ctx, query, arg...)
 	var i Unit
 	err := row.Scan(
 		&i.Name,
@@ -24,8 +24,8 @@ func (q *Queries) C_UpdateUnit(ctx context.Context, query string, arg UpdateUnit
 	return i, err
 }
 
-func (q *Queries) C_FetchPaginatedCategories(ctx context.Context, query string, arg FetchPaginatedCategoriesParams) ([]Category, error) {
-	rows, err := q.db.Query(ctx, query, arg.Limit, arg.Offset)
+func (q *Queries) C_FetchPaginatedCategories(ctx context.Context, query string, arg []any) ([]Category, error) {
+	rows, err := q.db.Query(ctx, query, arg...)
 	if err != nil {
 		return nil, err
 	}
@@ -44,15 +44,16 @@ func (q *Queries) C_FetchPaginatedCategories(ctx context.Context, query string, 
 	return items, nil
 }
 
-func (q *Queries) C_GetTableSize(ctx context.Context, query string) (int64, error) {
-	row := q.db.QueryRow(ctx, query)
+func (q *Queries) C_GetTableSize(ctx context.Context, query string, arg []any) (int64, error) {
+	row := q.db.QueryRow(ctx, query, arg...)
 	var exact_count int64
 	err := row.Scan(&exact_count)
 	return exact_count, err
 }
 
-func (q *Queries) C_FetchPaginatedLocations(ctx context.Context, query string, arg FetchPaginatedLocationsParams) ([]Location, error) {
-	rows, err := q.db.Query(ctx, query, arg.Limit, arg.Offset)
+
+func (q *Queries) C_FetchPaginatedLocations(ctx context.Context, query string, arg []any) ([]Location, error) {
+	rows, err := q.db.Query(ctx, query, arg...)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +72,8 @@ func (q *Queries) C_FetchPaginatedLocations(ctx context.Context, query string, a
 	return items, nil
 }
 
-func (q *Queries) C_FetchPaginatedUnits(ctx context.Context, query string, arg FetchPaginatedUnitsParams) ([]Unit, error) {
-	rows, err := q.db.Query(ctx, query, arg.Limit, arg.Offset)
+func (q *Queries) C_FetchPaginatedUnits(ctx context.Context, query string, arg []any) ([]Unit, error) {
+	rows, err := q.db.Query(ctx, query, arg...)
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +92,8 @@ func (q *Queries) C_FetchPaginatedUnits(ctx context.Context, query string, arg F
 	return items, nil
 }
 
-func (q *Queries) C_FetchPaginatedUsers(ctx context.Context, query string, arg FetchPaginatedUsersParams) ([]FetchPaginatedUsersRow, error) {
-	rows, err := q.db.Query(ctx, query, arg.Limit, arg.Offset)
+func (q *Queries) C_FetchPaginatedUsers(ctx context.Context, query string, arg []any) ([]FetchPaginatedUsersRow, error) {
+	rows, err := q.db.Query(ctx, query, arg...)
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +119,8 @@ func (q *Queries) C_FetchPaginatedUsers(ctx context.Context, query string, arg F
 	return items, nil
 }
 
-func (q *Queries) C_FetchPaginatedMaterials(ctx context.Context, query string, arg FetchPaginatedMaterialsParams) ([]Material, error) {
-	rows, err := q.db.Query(ctx, query, arg.Limit, arg.Offset)
+func (q *Queries) C_FetchPaginatedMaterials(ctx context.Context, query string, arg []any) ([]Material, error) {
+	rows, err := q.db.Query(ctx, query, arg...)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +146,8 @@ func (q *Queries) C_FetchPaginatedMaterials(ctx context.Context, query string, a
 	return items, nil
 }
 
-func (q *Queries) C_UpdateMaterial(ctx context.Context, query string, arg UpdateMaterialParams) (UpdateMaterialRow, error) {
-	row := q.db.QueryRow(ctx, query, arg.ID)
+func (q *Queries) C_UpdateMaterial(ctx context.Context, query string, arg []any) (UpdateMaterialRow, error) {
+	row := q.db.QueryRow(ctx, query, arg...)
 	var i UpdateMaterialRow
 	err := row.Scan(
 		&i.Name,
@@ -158,8 +159,8 @@ func (q *Queries) C_UpdateMaterial(ctx context.Context, query string, arg Update
 	return i, err
 }
 
-func (q *Queries) C_FetchPaginatedLocationMaterials(ctx context.Context, query string, arg FetchPaginatedLocationMaterialsParams) ([]LocationMaterial, error) {
-	rows, err := q.db.Query(ctx, query, arg.Limit, arg.Offset)
+func (q *Queries) C_FetchPaginatedLocationMaterials(ctx context.Context, query string, arg []any) ([]LocationMaterial, error) {
+	rows, err := q.db.Query(ctx, query, arg...)
 	if err != nil {
 		return nil, err
 	}
@@ -272,8 +273,8 @@ func (q *Queries) C_FetchPaginatedTransactions(ctx context.Context, query string
 	return items, nil
 }
 
-func (q *Queries) C_FetchPaginatedTransactionsWithJson(ctx context.Context, query string, arg FetchPaginatedTransactionsParams) ([][]byte, error) {
-	rows, err := q.db.Query(ctx, query, arg.Limit, arg.Offset)
+func (q *Queries) C_FetchPaginatedTransactionsWithJson(ctx context.Context, query string, arg []any) ([][]byte, error) {
+	rows, err := q.db.Query(ctx, query, arg...)
 	if err != nil {
 		return nil, err
 	}

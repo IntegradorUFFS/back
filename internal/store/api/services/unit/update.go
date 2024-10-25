@@ -6,6 +6,7 @@ import (
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/jackc/pgerrcode"
@@ -24,29 +25,31 @@ func Update(w http.ResponseWriter, r *http.Request, p unitTypes.T_params, b unit
 	update_query := `UPDATE unit
 					  set `
 
-	query_end := ` WHERE id = $1
-				  RETURNING name, short_name`
+	update_count := 1
 
-	is_first_field := true
+	var updates_arr []any
 
 	if b.Name != "" {
-		if !is_first_field {
+		if update_count == 1 {
 			update_query = update_query + `, `
 		}
-		update_query = update_query + `name = '` + b.Name + `'`
-		is_first_field = false
+		update_query = update_query + `name = $` + fmt.Sprint(update_count)
+		updates_arr = append(updates_arr, b.Name)
+		update_count += 1
 	}
 	if b.ShortName != "" {
-		if !is_first_field {
+		if update_count == 1 {
 			update_query = update_query + `, `
 		}
-		update_query = update_query + `short_name = '` + b.ShortName + `'`
-		is_first_field = false
+		update_query = update_query + `short_name = $` + fmt.Sprint(update_count)
+		updates_arr = append(updates_arr, b.ShortName)
+		update_count += 1
 	}
 
-	unit, err := q.C_UpdateUnit(r.Context(), update_query+query_end, pgstore.UpdateUnitParams{
-		ID: p.ID,
-	})
+	updates_arr = append(updates_arr, p.ID)
+
+	unit, err := q.C_UpdateUnit(r.Context(), update_query+` WHERE id = $`+fmt.Sprint(update_count)+`
+	RETURNING name, short_name`, updates_arr)
 
 	if err != nil {
 		var e *pgconn.PgError

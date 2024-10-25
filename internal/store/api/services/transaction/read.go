@@ -5,6 +5,7 @@ import (
 	transactionTypes "back/internal/store/api/types/transaction"
 	pgstore "back/internal/store/pgstore/sqlc"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 )
@@ -27,47 +28,62 @@ func Read(w http.ResponseWriter, r *http.Request, p transactionTypes.T_params, u
 		Meta transactionTypes.T_responseMeta        `json:"meta"`
 	}
 
-	is_first_field := true
+	filter_count := 1
 
-	if url_q.FilterDestinyLocationID != "" {
-		if is_first_field {
+	var filters_arr []any
+
+	if url_q.FilterMaterialID != "" {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " destiny_id = '" + url_q.FilterDestinyLocationID + "'"
-		is_first_field = false
+		filter += " material_id = $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterMaterialID)
+	}
+	
+	if url_q.FilterOriginLocationID != "" {
+		if filter_count == 1 {
+			filter += " WHERE"
+		} else {
+			filter += " AND"
+		}
+		filter += " origin_id = $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterOriginLocationID)
+	}
+
+	if url_q.FilterDestinyLocationID != "" {
+		if filter_count == 1 {
+			filter += " WHERE"
+		} else {
+			filter += " AND"
+		}
+		filter += " destiny_id = $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterDestinyLocationID)
 	}
 
 	if url_q.FilterType != "" {
-		if is_first_field {
+		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " type = '" + url_q.FilterType + "'"
-		is_first_field = false
+		filter += " type = $" + fmt.Sprint(filter_count)
+		filter_count += 1
+
+		filters_arr = append(filters_arr, url_q.FilterType)
 	}
 
-	if url_q.FilterOriginLocationID != "" {
-		if is_first_field {
-			filter += " WHERE"
-		} else {
-			filter += " AND"
-		}
-		filter += " origin_id = '" + url_q.FilterOriginLocationID + "'"
-		is_first_field = false
-	}
+	size_filters := filters_arr
 
-	if url_q.FilterMaterialID != "" {
-		if is_first_field {
-			filter += " WHERE"
-		} else {
-			filter += " AND"
-		}
-		filter += " material_id = '" + url_q.FilterMaterialID + "'"
-		is_first_field = false
-	}
+	filters_arr = append(filters_arr, limit)
+	filters_arr = append(filters_arr, offset)
 
 	transactions, err := q.C_FetchPaginatedTransactionsWithJson(r.Context(), `SELECT json_build_object(
     'id', transaction.id,
@@ -94,17 +110,14 @@ LEFT JOIN material ON transaction.material_id = material.id
 LEFT JOIN location origin ON transaction.origin_location_id = origin.id
 LEFT JOIN location destiny ON transaction.destiny_location_id = destiny.id
 `+filter+
-		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+", created_at DESC LIMIT $1 OFFSET $2", pgstore.FetchPaginatedTransactionsParams{
-		Limit:  limit,
-		Offset: offset,
-	})
+		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+", created_at DESC LIMIT $" + fmt.Sprint(filter_count) + " OFFSET $" + fmt.Sprint(filter_count + 1), filters_arr)
 
 	if err != nil {
 		helper.HandleErrorMessage(w, err, "None transaction")
 		return
 	}
 
-	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM transaction`+filter)
+	size, err := q.C_GetTableSize(r.Context(), `SELECT count(*) AS exact_count FROM transaction`+filter, size_filters)
 
 	if err != nil {
 		helper.HandleError(w, "", "Something went wrong", http.StatusInternalServerError)
