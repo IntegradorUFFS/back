@@ -42,7 +42,7 @@ func Update(w http.ResponseWriter, r *http.Request, p userTypes.T_params, b user
 	var updates_arr []any
 
 	if b.FirstName != "" {
-		if update_count == 1 {
+		if update_count > 1 {
 			update_query = update_query + `, `
 		}
 		update_query = update_query + `first_name = $` + fmt.Sprint(update_count)
@@ -51,7 +51,7 @@ func Update(w http.ResponseWriter, r *http.Request, p userTypes.T_params, b user
 	}
 
 	if b.Email != "" {
-		if update_count == 1 {
+		if update_count > 1 {
 			update_query = update_query + `, `
 		}
 		update_query = update_query + `email = $` + fmt.Sprint(update_count)
@@ -60,7 +60,7 @@ func Update(w http.ResponseWriter, r *http.Request, p userTypes.T_params, b user
 	}
 
 	if b.LastName != "" {
-		if update_count == 1 {
+		if update_count > 1 {
 			update_query = update_query + `, `
 		}
 		update_query = update_query + `last_name = $` + fmt.Sprint(update_count)
@@ -69,7 +69,7 @@ func Update(w http.ResponseWriter, r *http.Request, p userTypes.T_params, b user
 	}
 
 	if b.Password != "" {
-		if update_count == 1 {
+		if update_count > 1 {
 			update_query = update_query + `, `
 		}
 		update_query = update_query + `password = $` + fmt.Sprint(update_count)
@@ -78,7 +78,7 @@ func Update(w http.ResponseWriter, r *http.Request, p userTypes.T_params, b user
 	}
 
 	if b.Role != "" {
-		if update_count == 1 {
+		if update_count > 1 {
 			update_query = update_query + `, `
 		}
 		update_query = update_query + `role = $` + fmt.Sprint(update_count)

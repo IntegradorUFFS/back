@@ -347,7 +347,7 @@ func (u MaterialQuery) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err == nil {
-		submit_body.CategoryID = parsed_unit_id
+		submit_body.UnitID = parsed_unit_id
 	}
 
 	materialServices.Update(w, r, materialTypes.T_params{

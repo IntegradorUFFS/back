@@ -32,7 +32,7 @@ func Update(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b 
 	var updates_arr []any
 
 	if b.Name != "" {
-		if update_count == 1 {
+		if update_count > 1 {
 			update_query = update_query + `, `
 		}
 		update_query = update_query + `name = $` + fmt.Sprint(update_count)
@@ -40,7 +40,7 @@ func Update(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b 
 		update_count += 1
 	}
 	if b.Description != "" {
-		if update_count == 1 {
+		if update_count > 1 {
 			update_query = update_query + `, `
 		}
 		update_query = update_query + `description = $` + fmt.Sprint(update_count)
@@ -53,7 +53,7 @@ func Update(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b 
 			helper.HandleErrorMessage(w, err, "Category")
 			return
 		} else {
-			if update_count == 1 {
+			if update_count > 1 {
 				update_query = update_query + `, `
 			}
 			update_query = update_query + `category_id = $` + fmt.Sprint(update_count)
@@ -67,7 +67,7 @@ func Update(w http.ResponseWriter, r *http.Request, p materialTypes.T_params, b 
 			helper.HandleErrorMessage(w, err, "Unit")
 			return
 		} else {
-			if update_count == 1 {
+			if update_count > 1 {
 				update_query = update_query + `, `
 			}
 			update_query = update_query + `unit_id = $` + fmt.Sprint(update_count)

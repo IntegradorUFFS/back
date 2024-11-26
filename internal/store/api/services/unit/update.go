@@ -30,7 +30,7 @@ func Update(w http.ResponseWriter, r *http.Request, p unitTypes.T_params, b unit
 	var updates_arr []any
 
 	if b.Name != "" {
-		if update_count == 1 {
+		if update_count > 1 {
 			update_query = update_query + `, `
 		}
 		update_query = update_query + `name = $` + fmt.Sprint(update_count)
@@ -38,7 +38,7 @@ func Update(w http.ResponseWriter, r *http.Request, p unitTypes.T_params, b unit
 		update_count += 1
 	}
 	if b.ShortName != "" {
-		if update_count == 1 {
+		if update_count > 1 {
 			update_query = update_query + `, `
 		}
 		update_query = update_query + `short_name = $` + fmt.Sprint(update_count)
