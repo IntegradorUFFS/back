@@ -43,14 +43,14 @@ func Read(w http.ResponseWriter, r *http.Request, p transactionTypes.T_params, u
 
 		filters_arr = append(filters_arr, url_q.FilterMaterialID)
 	}
-	
+
 	if url_q.FilterOriginLocationID != "" {
 		if filter_count == 1 {
 			filter += " WHERE"
 		} else {
 			filter += " AND"
 		}
-		filter += " origin_id = $" + fmt.Sprint(filter_count)
+		filter += " origin_location_id = $" + fmt.Sprint(filter_count)
 		filter_count += 1
 
 		filters_arr = append(filters_arr, url_q.FilterOriginLocationID)
@@ -62,7 +62,7 @@ func Read(w http.ResponseWriter, r *http.Request, p transactionTypes.T_params, u
 		} else {
 			filter += " AND"
 		}
-		filter += " destiny_id = $" + fmt.Sprint(filter_count)
+		filter += " destiny_location_id = $" + fmt.Sprint(filter_count)
 		filter_count += 1
 
 		filters_arr = append(filters_arr, url_q.FilterDestinyLocationID)
@@ -110,7 +110,7 @@ LEFT JOIN material ON transaction.material_id = material.id
 LEFT JOIN location origin ON transaction.origin_location_id = origin.id
 LEFT JOIN location destiny ON transaction.destiny_location_id = destiny.id
 `+filter+
-		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+", created_at DESC LIMIT $" + fmt.Sprint(filter_count) + " OFFSET $" + fmt.Sprint(filter_count + 1), filters_arr)
+		" ORDER BY "+url_q.SortColumn+" "+url_q.SortDirection+", created_at DESC LIMIT $"+fmt.Sprint(filter_count)+" OFFSET $"+fmt.Sprint(filter_count+1), filters_arr)
 
 	if err != nil {
 		helper.HandleErrorMessage(w, err, "None transaction")
